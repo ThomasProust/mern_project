@@ -9,11 +9,9 @@ passport.serializeUser((user, done) => {
 	done(null, user.id);
 });
 
-passport.deserializeUser((id, done) => {
-	User.findById(id)
-	.then(user => {
-		done(null, user);
-	});
+passport.deserializeUser(async (id, done) => {
+	const user = await User.findById(id)
+	return done(null, user);
 });
 
 passport.use(
@@ -22,26 +20,23 @@ passport.use(
 			clientID: keys.googleClientID,
 			clientSecret: keys.googleClientSecret,
 			callbackURL: '/auth/google/callback',
-			proxy: true //trudt heroku proxy
+			proxy: true //trust heroku proxy
 		}, 
-		(accessToken, refreshToken, profile, done) => {
+		async (accessToken, refreshToken, profile, done) => {
 
-			User.findOne({googleId: profile.id})
-			.then(existingUser => {
+			const existingUser = await User.findOne({googleId: profile.id});
 
-				if(existingUser) {
+			if(existingUser) {
 
-					//we already have a record with the given profile id
-					done(null, existingUser); //first argument is error object, pass null if no error
+				//we already have a record with the given profile id
+				return done(null, existingUser); //first argument is error object, pass null if no error
 
-				} else {
+			} else {
 
-					new User({googleId: profile.id})
-					.save()
-					.then(user => done(null, user));
+				const user = await new User({googleId: profile.id}).save();
+				return done(null, user);
 
-				}
-			});
+			}
 		}
 	)
 ); 
